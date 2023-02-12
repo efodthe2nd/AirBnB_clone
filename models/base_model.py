@@ -1,58 +1,50 @@
-#!/usr/bin/python3
-"""Module base_model
+#!/usr/bin/env python3
 
-This Module contains a definition for BaseModel Class
-"""
-
-from datetime import datetime
+"""The base class for the Airbnb project"""
 import uuid
-
+from datetime import datetime
 import models
 
 
 class BaseModel:
-    """BaseModel Class"""
+    """This class implement all common attributes for other models"""
 
     def __init__(self, *args, **kwargs):
-        """__init__ method & instantiation of class Basemodel
+        """Initializing the instances"""
+        if kwargs:
+            attr = kwargs.copy()
+            del attr['__class__']
+            str_c_at = attr['created_at']
+            attr['created_at'] = datetime.strptime(str_c_at,
+                                                   '%Y-%m-%dT%H:%M:%S.%f')
+            str_u_at = attr['updated_at']
+            attr['updated_at'] = datetime.strptime(str_u_at,
+                                                   '%Y-%m-%dT%H:%M:%S.%f')
 
-        Args:
-            *args.
-            **kwargs (dict): Key/value pairs
-        """
-
-        self.id = str(uuid.uuid4())
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
-
-        if kwargs is not None and len(kwargs) > 0:
-            for key, value in kwargs.items():
-                if key == '__class__':
-                    continue
-                elif key in ['created_at', 'updated_at']:
-                    setattr(self, key, datetime.fromisoformat(value))
-                else:
-                    setattr(self, key, value)
+            for key in attr:
+                setattr(self, key, attr[key])
         else:
+            self.id = str(uuid.uuid4())
+            self.created_at = datetime.today()
+            self.updated_at = datetime.today()
             models.storage.new(self)
 
-    def to_dict(self):
-        """
-        returns a dictionary containing all
-        keys/values of __dict__ of the instance
-        """
-        bs_dict = ({
-            k: v.isoformat() if isinstance(v, datetime) else v
-            for (k, v) in self.__dict__.items()
-            })
-        bs_dict["__class__"] = self.__class__.__name__
-        return bs_dict
+    def __str__(self):
+        """Return the string representation of the BaseModel class"""
+        return f"[{self.__class__.__name__}] ({self.id}) {self.__dict__}"
 
     def save(self):
-        """Update updated_at with the current datetime."""
-        self.updated_at = datetime.now()
+        """Updates the public intstance atrribute updated_at with
+        the current datetime"""
+        self.updated_at = datetime.today()
         models.storage.save()
 
-    def __str__(self):
-        """should print/str representation of the BaseModel instance."""
-        return f'[{self.__class__.__name__}] ({self.id}) {self.__dict__}'
+    def to_dict(self):
+        """Returns a dictionary representation of BaseModel"""
+        attr = self.__dict__.copy()
+        attr['__class__'] = self.__class__.__name__
+        if type(attr['created_at']) is not str:
+            attr['created_at'] = attr['created_at'].isoformat()
+        if type(attr['updated_at']) is not str:
+            attr['updated_at'] = attr['updated_at'].isoformat()
+        return attr
